@@ -6,9 +6,21 @@ EC2 Instance (Ubuntu Linux): Hosts the PHP website with Apache web server.
 MySQL (Amazon RDS): A managed relational database for storing application data.
 Elastic Load Balancer (ELB): Distributes incoming traffic for high availability.
 
-Security Groups:
-EC2 Security Group: Allows internet-facing traffic.
-RDS Security Group: Restricts access to the database.
-ELB Security Group: Manages incoming load-balanced traffic, HTTP, and SSH from anywhere.
+LAMP Stack AWS Architecture
+This architectural diagram illustrates the LAMP Stack deployment on AWS with high availability using the following components:
 
-This LAMP stack template provides a production-ready environment for hosting PHP applications on AWS, ensuring scalability, security, and high availability.
+✅ Elastic Load Balancer (ELB) – Distributes traffic across multiple EC2 instances.
+✅ Auto Scaling Group (ASG) – Automatically scales instances across multiple subnets for fault tolerance.
+✅ Amazon EC2 Instances (Ubuntu, Apache, PHP) – Hosts the PHP website.
+✅ Amazon RDS (MySQL) – Manages the relational database securely.
+✅ Subnets & VPC – Instances are placed in different subnets inside a VPC to ensure high availability.
+
+💡 Security Measures:
+
+ELB Security Group – Accepts incoming internet traffic.
+EC2 Security Group – Accepts traffic only from ELB for security.
+RDS Security Group – Accepts database connections only from EC2 instances.
+📍 Usage:
+Use this architecture as a reference for deploying a scalable and secure LAMP Stack on AWS.
+
+![LAMP Stack AWS Architecture](image.png)
