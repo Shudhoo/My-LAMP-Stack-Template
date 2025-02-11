@@ -9,11 +9,11 @@ Elastic Load Balancer (ELB): Distributes incoming traffic for high availability.
 LAMP Stack AWS Architecture
 This architectural diagram illustrates the LAMP Stack deployment on AWS with high availability using the following components:
 
-✅ Elastic Load Balancer (ELB) – Distributes traffic across multiple EC2 instances.
-✅ Auto Scaling Group (ASG) – Automatically scales instances across multiple subnets for fault tolerance.
-✅ Amazon EC2 Instances (Ubuntu, Apache, PHP) – Hosts the PHP website.
-✅ Amazon RDS (MySQL) – Manages the relational database securely.
-✅ Subnets & VPC – Instances are placed in different subnets inside a VPC to ensure high availability.
+Elastic Load Balancer (ELB) – Distributes traffic across multiple EC2 instances.
+Auto Scaling Group (ASG) – Automatically scales instances across multiple subnets for fault tolerance.
+Amazon EC2 Instances (Ubuntu, Apache, PHP) – Hosts the PHP website.
+Amazon RDS (MySQL) – Manages the relational database securely.
+Subnets & VPC – Instances are placed in different subnets inside a VPC to ensure high availability.
 
 💡 Security Measures:
 
