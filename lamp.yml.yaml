@@ -1,0 +1,161 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  elbSecuritygroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ELB allowing inbound HTTP traffic
+      VpcId: vpc-0ab6d3cb15f0bd39e
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+  projectSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for EC2 allowing SSH and HTTP
+      VpcId: vpc-0ab6d3cb15f0bd39e
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref elbSecuritygroup   
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0 
+  rdsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for RDS allowing MySQL traffic from EC2
+      VpcId: vpc-0ab6d3cb15f0bd39e
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref projectSecurityGroup 
+  projectInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0a7a4e87939439934
+      InstanceType: t3.micro
+      KeyName: key_22_01_25
+      SubnetId: subnet-0d610b1f40499db12
+      SecurityGroupIds:
+        - !Ref projectSecurityGroup
+      UserData: !Base64 |
+        #!/bin/bash
+        sudo su
+        apt install apache2 -y
+        rm /var/www/html/index.html
+        add-apt-repository -y ppa:ondrej/php
+        apt install php5.6 mysql-client php5.6-mysqli -y
+  projectlaunchtemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties: 
+      LaunchTemplateName: "Project1"
+      VersionDescription: "Version 1"
+      LaunchTemplateData: 
+        ImageId: ami-0a7a4e87939439934
+        InstanceType: t3.micro
+        KeyName: key_22_01_25
+        SecurityGroupIds:
+          - !Ref projectSecurityGroup
+        UserData: !Base64 |
+         #!/bin/bash
+         sudo su
+         apt install apache2 -y
+         rm /var/www/html/index.html
+         add-apt-repository -y ppa:ondrej/php
+         apt install php5.6 mysql-client php5.6-mysqli -y
+  RDSDBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+        AllocatedStorage: !Ref AllocatedStorage 
+        DBInstanceClass: !Ref DBInstanceClass 
+        Engine: !Ref Engine
+        EngineVersion: !Ref EngineVersion
+        MasterUsername: !Ref MasterUsername
+        MasterUserPassword: !Ref MasterUserPassword
+        VPCSecurityGroups:
+          - !Ref rdsSecurityGroup
+      
+    
+Parameters:
+  Parameters:
+  AllocatedStorage:
+    Type: Number
+    Default: 20
+    Description: "Allocated storage size in GB"
+  DBInstanceClass:
+    Type: String
+    Default: "db.t3.micro"
+    Description: "The instance class for RDS"
+  Engine:
+    Type: String
+    Default: "mysql"
+    Description: "Database engine"
+  EngineVersion:
+    Type: String
+    Default: "8.0"
+    Description: "Database engine version"
+  MasterUsername:
+    Type: String
+    Default: "admin"
+    Description: "Master username for RDS"
+  MasterUserPassword:
+    Type: String
+    NoEcho: true  
+    Description: "Master password for RDS"
+  ELBInstance:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: projectelb
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref elbSecuritygroup
+      Subnets:
+        - subnet-0d610b1f40499db12  
+        - subnet-00b435db201108e15
+      Type: application 
+  projectAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: "ProjectASG"
+      MinSize: 2
+      MaxSize: 4
+      DesiredCapacity: 2
+      VPCZoneIdentifier: 
+        - subnet-0d610b1f40499db12  
+        - subnet-00b435db201108e15
+      LaunchTemplate:
+        LaunchTemplateId: !Ref projectLaunchTemplate  
+        Version: !GetAtt projectLaunchTemplate.LatestVersionNumber
+      TargetGroupARNs:
+        - !Ref projectTargetGroup
+      HealthCheckType: "EC2"
+      HealthCheckGracePeriod: 300
+  projectTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: project-target-group
+      Port: 80
+      Protocol: HTTP
+      VpcId: vpc-0ab6d3cb15f0bd39e
+      TargetType: instance
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: "/"
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+  projectListener:
+      Type: AWS::ElasticLoadBalancingV2::Listener
+      Properties:
+        LoadBalancerArn: !Ref ELBInstance
+        Protocol: HTTP
+        Port: 80
+        DefaultActions:
+          - Type: forward
+            TargetGroupArn: !Ref projectTargetGroup
+      
